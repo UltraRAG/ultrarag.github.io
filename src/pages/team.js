@@ -1,8 +1,8 @@
 import React from 'react';
 import Layout from '@theme/Layout';
-import useBaseUrl from '@docusaurus/useBaseUrl'; 
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import { useIsZh } from '../i18n';
-import styles from './team.module.css'; 
+import styles from './team.module.css';
 
 // 数据配置
 const TopGroups = {
@@ -92,7 +92,7 @@ export default function Team() {
           <div className={styles.headerSection}>
             <h1>{isZh ? '团队成员' : 'Team Members'}</h1>
           </div>
-          
+
           {/* 顶部并排区域 */}
           <div className={styles.topGroupsRow}>
             {topGroups.map((group, idx) => (
@@ -109,22 +109,22 @@ export default function Team() {
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            <img 
-                              src={useBaseUrl(member.avatarSrc)} 
-                              alt={member.name} 
-                              className={styles.avatar} 
+                            <img width="160" height="160" loading="lazy" decoding="async"
+                              src={useBaseUrl(member.avatarSrc)}
+                              alt={member.name}
+                              className={styles.avatar}
                             />
                           </a>
                         ) : (
-                          <img 
-                            src={useBaseUrl(member.avatarSrc)} 
-                            alt={member.name} 
-                            className={styles.avatar} 
+                          <img width="160" height="160" loading="lazy" decoding="async"
+                            src={useBaseUrl(member.avatarSrc)}
+                            alt={member.name}
+                            className={styles.avatar}
                           />
                         )}
                       </div>
                       <div className={styles.memberInfo}>
-                        <h4 className={styles.memberName}>
+                        <h3 className={styles.memberName}>
                           {member.link ? (
                             <a
                               className={styles.memberNameLink}
@@ -137,7 +137,7 @@ export default function Team() {
                           ) : (
                             member.name
                           )}
-                        </h4>
+                        </h3>
                         {member.title && <span className={styles.memberTitle}>{member.title}</span>}
                         <span className={styles.memberRole}>{member.role}</span>
                       </div>
@@ -163,22 +163,22 @@ export default function Team() {
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          <img 
-                            src={useBaseUrl(member.avatarSrc)} 
-                            alt={member.name} 
-                            className={styles.avatar} 
+                          <img width="160" height="160" loading="lazy" decoding="async"
+                            src={useBaseUrl(member.avatarSrc)}
+                            alt={member.name}
+                            className={styles.avatar}
                           />
                         </a>
                       ) : (
-                        <img 
-                          src={useBaseUrl(member.avatarSrc)} 
-                          alt={member.name} 
-                          className={styles.avatar} 
+                        <img width="160" height="160" loading="lazy" decoding="async"
+                          src={useBaseUrl(member.avatarSrc)}
+                          alt={member.name}
+                          className={styles.avatar}
                         />
                       )}
                     </div>
                     <div className={styles.memberInfo}>
-                      <h4 className={styles.memberName}>
+                      <h3 className={styles.memberName}>
                         {member.link ? (
                           <a
                             className={styles.memberNameLink}
@@ -191,7 +191,7 @@ export default function Team() {
                         ) : (
                           member.name
                         )}
-                      </h4>
+                      </h3>
                       {member.title && <span className={styles.memberTitle}>{member.title}</span>}
                       <span className={styles.memberRole}>{member.role}</span>
                     </div>

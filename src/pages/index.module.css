@@ -116,7 +116,7 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  margin-left: -40px; /* 向左靠近文字 */
+  margin-left: 0; /* 向左靠近文字 */
 }
 
 .heroImgElement {
@@ -376,7 +376,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: background-color 0.3s, box-shadow 0.3s, transform 0.3s;
   z-index: 10;
   box-shadow: 0 4px 20px rgba(0,0,0,0.08);
 }
@@ -413,11 +413,11 @@
 }
 
 .arrowLeft {
-  left: -64px;
+  left: 16px;
 }
 
 .arrowRight {
-  right: -64px;
+  right: 16px;
 }
 
 /* 移动端适配 */
@@ -712,16 +712,16 @@
   }
 
   .arrowLeft {
-    left: -8px;
+    left: 8px;
   }
 
   .arrowRight {
-    right: -8px;
+    right: 8px;
   }
 
   .carouselArrow {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
   }
 
   .carouselArrow::after {
@@ -837,8 +837,8 @@
   }
 
   .carouselArrow {
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
   }
 
   .arrowLeft {
@@ -855,8 +855,8 @@
   }
 
   .dot {
-    width: 8px;
-    height: 8px;
+    width: 32px;
+    height: 32px;
   }
 
   .quickStartSection {
@@ -889,4 +889,61 @@
   .logoGrid {
     gap: 16px 28px;
   }
+}
+
+/* Reserve media space before decoding and let long button labels wrap. */
+.heroTextWrapper, .quickStartCode, .quickStartContent { min-width: 0; }
+.heroButtons { flex-wrap: wrap; }
+.heroImage { min-width: 0; }
+.heroImgElement { aspect-ratio: 1; display: block; }
+.heroTitle { font-size: clamp(48px, 5.2vw, 78px); }
+.quickStartImage { aspect-ratio: 2782 / 2008; }
+.carouselImage { object-fit: contain; }
+.quickStartCode :global([class*="buttonGroup"]) { display: flex !important; }
+
+.dot {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.dot::after {
+  content: '';
+  display: block;
+  width: 10px;
+  height: 10px;
+  margin: auto;
+  border-radius: 50%;
+  background: #767676;
+}
+.dot.active { background: transparent; transform: none; }
+.dot.active::after { background: #2563eb; }
+.rotationControl {
+  display: block;
+  min-height: 44px;
+  margin: 8px auto 0;
+  padding: 8px 16px;
+  background: transparent;
+  color: #555;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+@media (max-width: 996px) {
+  .heroImage { width: min(100%, 400px); }
+  .heroTitle { font-size: 48px; }
+}
+@media (max-width: 480px) {
+  .heroTitle { font-size: 36px; }
+  .heroContent { flex-direction: column; }
+  .heroImage { width: min(72vw, 280px); }
+  .heroTextWrapper { width: 100%; }
+  .carouselArrow { width: 44px; height: 44px; }
+}
+
+@media (min-width: 997px) {
+  .heroButtons a { padding-inline: 16px; font-size: 15px; }
 }

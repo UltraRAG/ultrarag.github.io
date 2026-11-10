@@ -51,7 +51,7 @@
 
 .sectionDesc {
   font-size: 17px;
-  color: #888;
+  color: #666;
 }
 
 /* ============================================
@@ -163,7 +163,7 @@
 
 .blogFeaturedMeta {
   font-size: 14px;
-  color: #999;
+  color: #666;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -235,7 +235,7 @@
 
 .blogCardMeta {
   font-size: 13px;
-  color: #999;
+  color: #666;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -400,7 +400,7 @@
 .paperVenue {
   font-size: 12px;
   font-weight: 600;
-  color: #888;
+  color: #666;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 2px 10px;
@@ -423,7 +423,7 @@
 
 .paperAuthors {
   font-size: 14px;
-  color: #999;
+  color: #666;
   margin-bottom: 10px;
 }
 

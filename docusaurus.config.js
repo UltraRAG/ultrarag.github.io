@@ -11,11 +11,12 @@ const config = {
   url: 'https://ultrarag.github.io', 
   baseUrl: '/', // 如果你是用 GitHub Pages 且不是自定义域名，这里通常填 '/仓库名/'
 
-  organizationName: 'xhd0728', // 你的 GitHub 用户名
+  organizationName: 'UltraRAG', // 你的 GitHub 用户名
   projectName: 'ultrarag.github.io', // 你的仓库名
 
   onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
+  onBrokenAnchors: 'throw',
+  markdown: { hooks: { onBrokenMarkdownLinks: 'throw' } },
 
   i18n: {
     defaultLocale: 'en',
@@ -50,12 +51,14 @@ const config = {
         disableSwitch: true,  // 关掉切换开关（像vLLM一样保持风格统一）
         respectPrefersColorScheme: false,
       },
-      image: 'img/docusaurus-social-card.jpg',
+      image: 'img/home/home.jpg',
       navbar: {
         // title: 'UltraRAG',
         logo: {
           alt: 'UltraRAG Logo',
-          src: 'img/_UltraRAG_logo.png',
+          src: 'img/optimized/_UltraRAG_logo-400.webp',
+          width: 400,
+          height: 60,
         },
         items: [
           // ========== 中间区域菜单 (position: left，但会通过 CSS 居中) ==========

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from '@docusaurus/Link';
 import { useNavbarMobileSidebar } from '@docusaurus/theme-common/internal';
 import { useLanguage } from '@site/src/context/LanguageContext';
@@ -88,7 +88,7 @@ function ExternalIcon() {
 }
 
 /* ── 可折叠菜单组 ── */
-function MenuGroup({ item, onClose }) {
+function MenuGroup({ item, onClose, isZh }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -100,14 +100,16 @@ function MenuGroup({ item, onClose }) {
         <button
           className={styles.expandBtn}
           onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
-          aria-label="展开子菜单"
+          aria-label={`${open ? (isZh ? '收起' : 'Collapse') : (isZh ? '展开' : 'Expand')} ${item.label}`}
+          aria-expanded={open}
+          aria-controls={`mobile-${item.to.slice(1)}`}
         >
           <Chevron open={open} />
         </button>
       </div>
 
       {open && (
-        <div className={styles.subMenu}>
+        <div id={`mobile-${item.to.slice(1)}`} className={styles.subMenu}>
           {item.children.map((section, si) => (
             <div key={si} className={styles.section}>
               <div className={styles.sectionTitle}>{section.section}</div>
@@ -140,15 +142,49 @@ export default function NavbarMobilePrimaryMenu() {
   const mobileSidebar = useNavbarMobileSidebar();
   const { lang, setLang } = useLanguage();
   const items = NAV_ITEMS[lang] || NAV_ITEMS.en;
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!mobileSidebar.shown) return;
+    const drawer = menuRef.current?.closest('.navbar-sidebar');
+    if (!drawer) return;
+    const frame = requestAnimationFrame(() => drawer.querySelector('.navbar-sidebar__close')?.focus());
+    const onKeyDown = event => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        mobileSidebar.toggle();
+      }
+      if (event.key === 'Tab') {
+        if (!drawer.contains(document.activeElement)) {
+          event.preventDefault();
+          drawer.querySelector('.navbar-sidebar__close')?.focus();
+          return;
+        }
+        const controls = [...drawer.querySelectorAll('a[href], button, [tabindex="0"]')]
+          .filter(element => !element.disabled && element.getClientRects().length && !element.closest('[inert]'));
+        if (event.shiftKey && document.activeElement === controls[0]) {
+          event.preventDefault(); controls.at(-1)?.focus();
+        } else if (!event.shiftKey && document.activeElement === controls.at(-1)) {
+          event.preventDefault(); controls[0]?.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('keydown', onKeyDown);
+      if (drawer.contains(document.activeElement)) document.querySelector('.navbar__toggle')?.focus();
+    };
+  }, [mobileSidebar.shown, mobileSidebar.toggle]);
 
   const closeSidebar = () => mobileSidebar.toggle();
 
   return (
-    <div className={styles.mobileMenu}>
+    <div className={styles.mobileMenu} ref={menuRef}>
       <ul className={styles.menuList}>
         {items.map((item, i) =>
           item.type === 'group' ? (
-            <MenuGroup key={i} item={item} onClose={closeSidebar} />
+            <MenuGroup key={i} item={item} onClose={closeSidebar} isZh={lang === 'zh'} />
           ) : (
             <li key={i} className={styles.menuItem}>
               <Link to={item.to} className={styles.menuLink} onClick={closeSidebar}>
@@ -180,6 +216,8 @@ export default function NavbarMobilePrimaryMenu() {
           <button
             className={`${styles.langBtn} ${lang === 'en' ? styles.langActive : ''}`}
             onClick={() => setLang('en')}
+            aria-pressed={lang === 'en'}
+            lang="en"
           >
             EN
           </button>
@@ -187,6 +225,8 @@ export default function NavbarMobilePrimaryMenu() {
           <button
             className={`${styles.langBtn} ${lang === 'zh' ? styles.langActive : ''}`}
             onClick={() => setLang('zh')}
+            aria-pressed={lang === 'zh'}
+            lang="zh-CN"
           >
             中文
           </button>

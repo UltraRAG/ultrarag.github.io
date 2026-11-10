@@ -34,9 +34,9 @@ export default function Contact() {
                 <path d="M926.8 663.4c0-139.5-134.3-252.6-284.8-252.6S357.2 523.9 357.2 663.4s134.3 252.6 284.8 252.6c33.4 0 67-8.3 100.5-16.7L834.2 949l-33.5-100.5c67-50.2 126.1-117.3 126.1-185.1zM540.6 629.3c-17.8 0-33.4-15.6-33.4-33.4s15.6-33.4 33.4-33.4 33.4 15.6 33.4 33.4-15.6 33.4-33.4 33.4zm202.4 0c-17.8 0-33.4-15.6-33.4-33.4s15.6-33.4 33.4-33.4 33.4 15.6 33.4 33.4-15.6 33.4-33.4 33.4z" fill="currentColor"/>
               </svg>
             </div>
-            <h3 className={styles.cardTitle}>
+            <h2 className={styles.cardTitle}>
               {isZh ? '微信社区' : 'WeChat Community'}
-            </h3>
+            </h2>
             <p className={styles.cardText}>
               {isZh
                 ? '扫码加入我们的微信社区群。'
@@ -47,6 +47,8 @@ export default function Contact() {
                 src={useBaseUrl('img/contact/wechat_qr.png')}
                 alt={isZh ? '微信社区群二维码' : 'WeChat Community QR Code'}
                 className={styles.qrImage}
+                width="500" height="500"
+                decoding="async"
               />
             </div>
           </div>
@@ -54,9 +56,9 @@ export default function Contact() {
           {/* Card 2: Community Support */}
           <div className={styles.card}>
             <div className={styles.cardIcon}>💬</div>
-            <h3 className={styles.cardTitle}>
+            <h2 className={styles.cardTitle}>
               {isZh ? '社区交流' : 'Community'}
-            </h3>
+            </h2>
             <p className={styles.cardText}>
               {isZh
                 ? '加入社区交流问题、分享想法，并与开发者联系。'
@@ -72,9 +74,9 @@ export default function Contact() {
           {/* Card 3: GitHub Issues */}
           <div className={styles.card}>
             <div className={styles.cardIcon}>🐛</div>
-            <h3 className={styles.cardTitle}>
+            <h2 className={styles.cardTitle}>
               {isZh ? '问题反馈' : 'Bug Reports'}
-            </h3>
+            </h2>
             <p className={styles.cardText}>
               {isZh
                 ? '发现 bug 或有新功能建议？欢迎在 GitHub 提交 Issue。'
@@ -90,9 +92,9 @@ export default function Contact() {
           {/* Card 4: Email Us */}
           <div className={styles.card}>
             <div className={styles.cardIcon}>✉️</div>
-            <h3 className={styles.cardTitle}>
+            <h2 className={styles.cardTitle}>
               {isZh ? '邮件联系' : 'Email Us'}
-            </h3>
+            </h2>
             <p className={styles.cardText}>
               {isZh
                 ? '如有合作意向，欢迎随时邮件交流。'
