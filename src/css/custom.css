@@ -177,9 +177,28 @@
     background: #fff;
   }
 
-  /* 隐藏侧边栏自带的品牌 Logo 区域 */
   .navbar-sidebar__brand {
-    display: none !important;
+    display: flex;
+    height: 52px;
+    padding: 0 16px;
+  }
+
+  .navbar-sidebar__brand .navbar__brand {
+    position: static !important;
+    transform: none;
+  }
+
+  .navbar-sidebar__items {
+    height: calc(100% - 52px);
+  }
+
+  .navbar__inner > .navbar__items:not(.navbar__items--right) {
+    justify-content: flex-start;
+    gap: 12px;
+  }
+
+  :root {
+    --ifm-navbar-height: 52px;
   }
 }
 
@@ -222,7 +241,7 @@
 }
 
 .footer__copyright {
-  color: #999;
+  color: #666;
   font-size: 12px;
 }
 
@@ -416,7 +435,7 @@ a[class*="tag_"]:hover {
 .blog-post-date,
 time {
   font-size: 14px !important;
-  color: #999 !important;
+  color: #666 !important;
 }
 
 /* "阅读更多"链接 */
@@ -436,7 +455,7 @@ a[class*="readMore"] {
 }
 
 .table-of-contents a {
-  color: #999 !important;
+  color: #666 !important;
   transition: color 0.2s ease;
 }
 
@@ -460,7 +479,7 @@ a[class*="readMore"] {
 
 .pagination-nav__sublabel {
   font-size: 12px !important;
-  color: #999 !important;
+  color: #666 !important;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -469,4 +488,30 @@ a[class*="readMore"] {
   font-size: 16px !important;
   font-weight: 600 !important;
   color: #111 !important;
+}
+
+/* Visible keyboard focus and fixed-header anchor offsets on every page. */
+:where(a, button, textarea, summary):focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 3px;
+}
+
+[id] { scroll-margin-top: calc(var(--ifm-navbar-height) + 24px); }
+.navbar__logo img { width: auto; }
+.navbar__toggle, .navbar-sidebar__close { min-width: 44px; min-height: 44px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.blogVideo { aspect-ratio: auto 16 / 9; }
+
+@media (max-width: 996px) {
+  .navbar-sidebar { z-index: 30; }
+  .navbar-sidebar__backdrop { z-index: 25; }
 }

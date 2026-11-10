@@ -1,3 +1,4 @@
+import useBrokenLinks from '@docusaurus/useBrokenLinks';
 import React from 'react';
 import clsx from 'clsx';
 import Link from '@docusaurus/Link';
@@ -277,6 +278,7 @@ function ModelsSection() {
 }
 
 function PapersSection() {
+  useBrokenLinks().collectAnchor('papers');
   const isZh = useIsZh();
   const PapersList = isZh ? PAPERS_ZH : PAPERS_EN;
 

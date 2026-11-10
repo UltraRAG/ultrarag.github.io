@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Head from '@docusaurus/Head';
+import {externalUrl} from '../utils/externalUrl.mjs';
+import {startDemoStream} from '../utils/demoStream.mjs';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import { Highlight, themes } from 'prism-react-renderer';
 import { useIsZh } from '../i18n';
@@ -381,6 +384,13 @@ const UI = {
     toastKnowledgeBase: 'Knowledge base management is available after local deployment',
     toastKnowledgeSwitch: 'Knowledge base switching is available after local deployment',
     newChatTitle: 'New Chat',
+    demoNotice: 'Interactive preview · Replies are pre-recorded samples.',
+    send: 'Send message',
+    conversation: 'Conversation',
+    openMenu: 'Open menu',
+    closeMenu: 'Close menu',
+    copied: 'Copied',
+    copyFailed: 'Copy failed',
   },
   zh: {
     newChat: '新建对话',
@@ -399,6 +409,13 @@ const UI = {
     toastKnowledgeBase: '知识库管理功能请在本地部署后使用',
     toastKnowledgeSwitch: '知识库切换功能请在本地部署后使用',
     newChatTitle: '新对话',
+    demoNotice: '交互预览 · 回复为预设演示内容。',
+    send: '发送消息',
+    conversation: '对话记录',
+    openMenu: '打开菜单',
+    closeMenu: '关闭菜单',
+    copied: '已复制',
+    copyFailed: '复制失败',
   },
 };
 
@@ -414,33 +431,59 @@ function Toast({ message, visible, onClose }) {
   if (!visible) return null;
 
   return (
-    <div className={styles.toast}>
+    <div className={styles.toast} role="status">
       <span className={styles.toastIcon}>ℹ</span>
       <span>{message}</span>
     </div>
   );
 }
 
+function CopyCodeButton({code, t}) {
+  const [status, setStatus] = useState('');
+  const timeoutRef = useRef(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; clearTimeout(timeoutRef.current); };
+  }, []);
+  return <button type="button" className={styles.codeBlockCopy} onClick={async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      if (mounted.current) setStatus(t.copied);
+    } catch {
+      if (mounted.current) setStatus(t.copyFailed);
+    }
+    if (mounted.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => setStatus(''), 2000);
+    }
+  }}><span role="status">{status || t.copy}</span></button>;
+}
+
 // --- Components ---
 
-function Sidebar({ collapsed, onToggle, activeSession, sessions, onSessionChange, onNewChat, onShowToast, t }) {
+function Sidebar({ collapsed, onToggle, activeSession, sessions, onSessionChange, onNewChat, onShowToast, t, sidebarRef, isMobile }) {
   const logoUrl = useBaseUrl('img/ultrarag.svg');
   const homeUrl = useBaseUrl('/');
 
   return (
-    <aside className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ''}`}>
+    <aside id="demo-sidebar" ref={sidebarRef} inert={isMobile && collapsed ? true : undefined}
+      aria-label="Chat navigation" className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ''}`}>
       {/* Header */}
       <div className={styles.sidebarHeader}>
         <div className={styles.sidebarToggleRow}>
           {!collapsed && (
             <button className={styles.logoLink} onClick={onNewChat} title={t.newChat}>
-              <img src={logoUrl} alt="UltraRAG" className={styles.logoImg} />
+              <img src={logoUrl} alt="UltraRAG" width="400" height="60" className={styles.logoImg} />
             </button>
           )}
           <button
             className={`${styles.toggleBtn} ${collapsed ? styles.toggleBtnRotated : ''}`}
             onClick={onToggle}
-            title="Toggle Sidebar"
+            title={collapsed ? t.openMenu : t.closeMenu}
+            aria-label={collapsed ? t.openMenu : t.closeMenu}
+            aria-expanded={!collapsed}
+            aria-controls="demo-sidebar"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -451,7 +494,7 @@ function Sidebar({ collapsed, onToggle, activeSession, sessions, onSessionChange
         </div>
 
         {/* New Chat */}
-        <button className={styles.navBtn} onClick={onNewChat}>
+        <button className={styles.navBtn} aria-label={t.newChat} onClick={onNewChat}>
           <span className={styles.navIcon}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5"
               stroke="currentColor" width="20" height="20">
@@ -463,7 +506,7 @@ function Sidebar({ collapsed, onToggle, activeSession, sessions, onSessionChange
         </button>
 
         {/* Knowledge Base */}
-        <button className={styles.navBtn} onClick={() => onShowToast(t.toastKnowledgeBase)}>
+        <button className={styles.navBtn} aria-label={t.knowledgeBase} onClick={() => onShowToast(t.toastKnowledgeBase)}>
           <span className={styles.navIcon}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5"
               stroke="currentColor" width="20" height="20">
@@ -480,20 +523,22 @@ function Sidebar({ collapsed, onToggle, activeSession, sessions, onSessionChange
         <div className={styles.sessionList}>
           <div className={styles.sessionLabel}>{t.recentChats}</div>
           {sessions.map((session) => (
-            <div
+            <button
+              type="button"
+              aria-current={session.id === activeSession ? 'true' : undefined}
               key={session.id}
               className={`${styles.sessionItem} ${session.id === activeSession ? styles.sessionActive : ''}`}
               onClick={() => onSessionChange(session.id)}
             >
               <span className={styles.sessionTitle}>{session.title}</span>
-            </div>
+            </button>
           ))}
         </div>
       )}
 
       {/* Footer */}
       <div className={styles.sidebarFooter}>
-        <a href={homeUrl} className={styles.navBtn} style={{ textDecoration: 'none' }}>
+        <a href={homeUrl} aria-label={t.backToHome} className={styles.navBtn} style={{ textDecoration: 'none' }}>
           <span className={styles.navIcon}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5"
               stroke="currentColor" width="20" height="20">
@@ -513,7 +558,7 @@ function ProcessContainer({ steps, t }) {
 
   return (
     <div className={`${styles.processContainer} ${collapsed ? styles.processCollapsed : ''}`}>
-      <div className={styles.processHeader} onClick={() => setCollapsed(!collapsed)}>
+      <button type="button" className={styles.processHeader} aria-expanded={!collapsed} onClick={() => setCollapsed(!collapsed)}>
         <span className={styles.processHeaderDot}></span>
         <span className={styles.processHeaderText}>{t.thinkingProcess}</span>
         <svg className={`${styles.processChevron} ${collapsed ? '' : styles.processChevronOpen}`}
@@ -521,7 +566,7 @@ function ProcessContainer({ steps, t }) {
           stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
-      </div>
+      </button>
       {!collapsed && (
         <div className={styles.processBody}>
           {steps.map((step, idx) => (
@@ -601,19 +646,7 @@ function parseMarkdown(content, t) {
         <div key={key++} className={styles.codeBlockWrapper}>
           <div className={styles.codeBlockHeader}>
             <span className={styles.codeBlockLang}>{lang}</span>
-            <button className={styles.codeBlockCopy} onClick={(e) => {
-              navigator.clipboard.writeText(codeStr).then(() => {
-                e.currentTarget.classList.add(styles.copied);
-                setTimeout(() => e.currentTarget.classList.remove(styles.copied), 2000);
-              });
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-              <span>{t.copy}</span>
-            </button>
+            <CopyCodeButton code={codeStr} t={t} />
           </div>
           <Highlight code={codeStr} language={lang} theme={themes.github}>
             {({ tokens, getTokenProps }) => (
@@ -637,7 +670,7 @@ function parseMarkdown(content, t) {
 
     // Heading
     if (line.startsWith('### ')) {
-      elements.push(<h3 key={key++} className={styles.mdH3}>{line.slice(4)}</h3>);
+      elements.push(<h2 key={key++} className={styles.mdH3}>{line.slice(4)}</h2>);
       i++; continue;
     }
     if (line.startsWith('## ')) {
@@ -709,6 +742,11 @@ function renderInline(text) {
       nextMatch = codeMatch; type = 'code';
     }
 
+    const linkMatch = remaining.match(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/);
+    if (linkMatch && (!nextMatch || linkMatch.index < nextMatch.index)) {
+      nextMatch = linkMatch;
+      type = 'link';
+    }
     if (!nextMatch) {
       parts.push(<span key={key++}>{remaining}</span>);
       break;
@@ -716,7 +754,10 @@ function renderInline(text) {
     if (nextMatch.index > 0) {
       parts.push(<span key={key++}>{remaining.substring(0, nextMatch.index)}</span>);
     }
-    if (type === 'bold') {
+    if (type === 'link') {
+      const href = externalUrl(nextMatch[2]);
+      parts.push(href ? <a key={key++} href={href} target="_blank" rel="noopener noreferrer">{nextMatch[1]}</a> : <span key={key++}>{nextMatch[1]}</span>);
+    } else if (type === 'bold') {
       parts.push(<strong key={key++}>{nextMatch[1]}</strong>);
     } else {
       parts.push(<code key={key++} className={styles.inlineCode}>{nextMatch[1]}</code>);
@@ -755,7 +796,7 @@ function EmptyState({ onSuggestionClick, t, chips }) {
         <span className={styles.greetingGradient}>{t.exploreToday}
         </span>
       </div>
-      {/* <div className={styles.suggestionGrid}>
+      <div className={styles.suggestionGrid}>
         {chips.map((chip, idx) => (
           <button key={idx} className={styles.suggestionCard} onClick={() => onSuggestionClick(chip.text)}>
             <div className={styles.suggestionCardTop}>
@@ -765,7 +806,7 @@ function EmptyState({ onSuggestionClick, t, chips }) {
             <span className={styles.suggestionCardSub}>{chip.sub}</span>
           </button>
         ))}
-      </div> */}
+      </div>
     </div>
   );
 }
@@ -789,8 +830,15 @@ function PipelineDropdown({ pipelineIdx, onPipelineSelect }) {
   }, [open]);
 
   return (
-    <div className={styles.pipelineDropdownWrapper} ref={dropdownRef}>
-      <button className={styles.btnPipelineSelect} onClick={() => setOpen(!open)}>
+    <div className={styles.pipelineDropdownWrapper} ref={dropdownRef}
+      onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}
+      onKeyDown={event => {
+        if (event.key === 'Escape') {
+          setOpen(false);
+          dropdownRef.current?.querySelector('button')?.focus();
+        }
+      }}>
+      <button className={styles.btnPipelineSelect} aria-expanded={open} onClick={() => setOpen(!open)}>
         <span className={styles.pipelineName}>{pipeline.name}</span>
         <span className={styles.pipelineSubtext}>UltraRAG</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -817,13 +865,22 @@ function PipelineDropdown({ pipelineIdx, onPipelineSelect }) {
   );
 }
 
-function ChatArea({ messages, streamingMessage, isProcessing, onSendMessage, pipelineIdx, onPipelineSelect, onShowToast, isEmpty, t, sidebarCollapsed, onSidebarToggle }) {
+function ChatArea({ messages, streamingMessage, isProcessing, onSendMessage, pipelineIdx, onPipelineSelect, onShowToast, isEmpty, t, sidebarCollapsed, onSidebarToggle, isMobile, chips }) {
   const chatHistoryRef = useRef(null);
   const [inputValue, setInputValue] = useState('');
   const textareaRef = useRef(null);
 
+  const initialRender = useRef(true);
+  const previousMessages = useRef(messages);
+  const followBottom = useRef(true);
   useEffect(() => {
-    if (chatHistoryRef.current) {
+    if (initialRender.current) {
+      initialRender.current = false;
+      return;
+    }
+    const newUserMessage = previousMessages.current !== messages && messages.at(-1)?.role === 'user';
+    previousMessages.current = messages;
+    if (chatHistoryRef.current && (followBottom.current || newUserMessage)) {
       chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
     }
   }, [messages, streamingMessage]);
@@ -844,18 +901,18 @@ function ChatArea({ messages, streamingMessage, isProcessing, onSendMessage, pip
   }, [inputValue, isProcessing, onSendMessage]);
 
   const handleKeyDown = useCallback((e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229) {
       e.preventDefault();
       handleSend();
     }
   }, [handleSend]);
 
   return (
-    <div className={styles.chatMain}>
+    <main className={styles.chatMain} inert={isMobile && !sidebarCollapsed ? true : undefined}>
       {/* View Header */}
       <header className={styles.viewHeader}>
-        {sidebarCollapsed && (
-          <button className={styles.mobileMenuBtn} onClick={onSidebarToggle} aria-label="Open menu">
+        <button data-demo-menu className={styles.mobileMenuBtn} onClick={onSidebarToggle}
+          aria-label={t.openMenu} aria-controls="demo-sidebar" aria-expanded={!sidebarCollapsed}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="3" y1="6" x2="21" y2="6" />
@@ -863,18 +920,23 @@ function ChatArea({ messages, streamingMessage, isProcessing, onSendMessage, pip
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
-        )}
+        <h1 className={styles.srOnly}>UltraRAG Demo</h1>
         <PipelineDropdown pipelineIdx={pipelineIdx} onPipelineSelect={onPipelineSelect} />
       </header>
 
+      <p className={styles.demoNotice}>{t.demoNotice}</p>
       {/* Chat Container */}
       <div className={`${styles.chatContainer} ${isEmpty ? styles.chatContainerEmpty : ''}`}>
-        <div className={styles.chatHistory} ref={chatHistoryRef}>
+        <div className={styles.chatHistory} ref={chatHistoryRef} role="log" aria-label={t.conversation} aria-live="polite" aria-busy={isProcessing}
+          onScroll={event => {
+            const {scrollHeight, scrollTop, clientHeight} = event.currentTarget;
+            followBottom.current = scrollHeight - scrollTop - clientHeight < 80;
+          }}>
           {isEmpty && !streamingMessage ? (
             <EmptyState
               onSuggestionClick={(text) => handleSend(text)}
               t={t}
-              chips={[]}
+              chips={chips}
             />
           ) : (
             <>
@@ -909,6 +971,7 @@ function ChatArea({ messages, streamingMessage, isProcessing, onSendMessage, pip
               ref={textareaRef}
               className={styles.chatInput}
               placeholder={t.askUltraRAG}
+              aria-label={t.askUltraRAG}
               rows="1"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
@@ -928,6 +991,7 @@ function ChatArea({ messages, streamingMessage, isProcessing, onSendMessage, pip
               <div className={styles.rightActions}>
                 <button
                   className={styles.btnSend}
+                  aria-label={t.send}
                   onClick={() => handleSend()}
                   disabled={isProcessing || !inputValue.trim()}
                 >
@@ -942,17 +1006,53 @@ function ChatArea({ messages, streamingMessage, isProcessing, onSendMessage, pip
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
 // --- Main Demo Page ---
-export default function DemoPage() {
-  const isZh = useIsZh();
+function DemoExperience({isZh}) {
   const t = isZh ? UI.zh : UI.en;
   const lang = isZh ? 'zh' : 'en';
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [viewportReady, setViewportReady] = useState(false);
+  const sidebarRef = useRef(null);
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 768px)');
+    const update = () => {
+      setIsMobile(query.matches);
+      setSidebarCollapsed(query.matches);
+      setViewportReady(true);
+    };
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile || sidebarCollapsed) return;
+    const drawer = sidebarRef.current;
+    const focusable = () => [...drawer.querySelectorAll('button, a[href]')].filter(el => !el.disabled);
+    focusable()[0]?.focus();
+    const onKeyDown = event => {
+      const controls = focusable();
+      if (event.key === 'Escape') { event.preventDefault(); setSidebarCollapsed(true); }
+      if (event.key === 'Tab') {
+        if (event.shiftKey && document.activeElement === controls[0]) {
+          event.preventDefault(); controls.at(-1)?.focus();
+        } else if (!event.shiftKey && document.activeElement === controls.at(-1)) {
+          event.preventDefault(); controls[0]?.focus();
+        }
+      }
+    };
+    drawer.addEventListener('keydown', onKeyDown);
+    return () => {
+      drawer.removeEventListener('keydown', onKeyDown);
+      document.querySelector('[data-demo-menu]')?.focus();
+    };
+  }, [isMobile, sidebarCollapsed]);
   const [activeSession, setActiveSession] = useState(1);
   const [pipelineIdx, setPipelineIdx] = useState(1);
   const [conversations, setConversations] = useState(DEMO_CONVERSATIONS[lang]);
@@ -961,7 +1061,14 @@ export default function DemoPage() {
   const [toastVisible, setToastVisible] = useState(false);
   const [streamingMsg, setStreamingMsg] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const streamIntervalRef = useRef(null);
+  const cancelStreamRef = useRef(null);
+  useEffect(() => () => cancelStreamRef.current?.(), []);
+  const cancelStream = useCallback(() => {
+    cancelStreamRef.current?.();
+    cancelStreamRef.current = null;
+    setStreamingMsg(null);
+    setIsProcessing(false);
+  }, []);
 
   const currentMessages = conversations[activeSession] || [];
   const isEmpty = currentMessages.length === 0;
@@ -973,31 +1080,22 @@ export default function DemoPage() {
 
   const handleSessionChange = useCallback((sessionId) => {
     // Cancel any ongoing streaming when switching sessions
-    if (streamIntervalRef.current) {
-      clearInterval(streamIntervalRef.current);
-      streamIntervalRef.current = null;
-    }
-    setStreamingMsg(null);
-    setIsProcessing(false);
+    cancelStream();
+    if (isMobile) setSidebarCollapsed(true);
     setActiveSession(sessionId);
-  }, []);
+  }, [cancelStream, isMobile]);
 
   const handleNewChat = useCallback(() => {
-    // If current conversation is empty, do nothing
+    if (isMobile) setSidebarCollapsed(true);
     if (isEmpty) return;
     // Cancel any ongoing streaming
-    if (streamIntervalRef.current) {
-      clearInterval(streamIntervalRef.current);
-      streamIntervalRef.current = null;
-    }
-    setStreamingMsg(null);
-    setIsProcessing(false);
+    cancelStream();
     const newId = Date.now();
     setConversations((prev) => ({ ...prev, [newId]: [] }));
     setSessions((prev) => [{ id: newId, title: t.newChatTitle }, ...prev]);
     setActiveSession(newId);
     showToast(t.toastNewChat);
-  }, [isEmpty, showToast, t]);
+  }, [isEmpty, showToast, t, cancelStream, isMobile]);
 
   const handlePipelineSelect = useCallback((idx) => {
     setPipelineIdx(idx);
@@ -1021,41 +1119,30 @@ export default function DemoPage() {
     setIsProcessing(true);
     setStreamingMsg({ role: 'assistant', isThinking: true });
 
-    // After brief thinking phase, start streaming
-    setTimeout(() => {
-      const canned = CANNED_RESPONSES[lang][0];
-      const fullContent = canned.content;
-      let idx = 0;
-
-      setStreamingMsg({
-        role: 'assistant',
-        steps: canned.steps,
-        content: '',
-        isStreaming: true,
-      });
-
-      streamIntervalRef.current = setInterval(() => {
-        idx += 3;
-        if (idx >= fullContent.length) {
-          clearInterval(streamIntervalRef.current);
-          streamIntervalRef.current = null;
-          setStreamingMsg(null);
-          setIsProcessing(false);
-          setConversations((prev) => ({
-            ...prev,
-            [currentSession]: [...(prev[currentSession] || []), { role: 'assistant', ...canned }],
-          }));
-        } else {
-          setStreamingMsg(prev => prev ? { ...prev, content: fullContent.slice(0, idx) } : null);
-        }
-      }, 18);
-    }, 800);
+    cancelStreamRef.current?.();
+    cancelStreamRef.current = startDemoStream(CANNED_RESPONSES[lang][0], {
+      onChunk: setStreamingMsg,
+      onComplete: response => {
+        setStreamingMsg(null);
+        setIsProcessing(false);
+        setConversations(prev => ({
+          ...prev,
+          [currentSession]: [...(prev[currentSession] || []), {role: 'assistant', ...response}],
+        }));
+      },
+    });
   }, [activeSession, lang, t]);
 
   return (
-    <div className={styles.demoContainer}>
+    <div className={styles.demoContainer} data-ready={viewportReady || undefined}>
+      <Head>
+        <title>UltraRAG Demo | UltraRAG</title>
+        <meta name="description" content="Explore the UltraRAG chat interface with pre-recorded sample responses." />
+      </Head>
       <Sidebar
         collapsed={sidebarCollapsed}
+        isMobile={isMobile}
+        sidebarRef={sidebarRef}
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         activeSession={activeSession}
         sessions={sessions}
@@ -1065,13 +1152,13 @@ export default function DemoPage() {
         t={t}
       />
       {/* 移动端遮罩层 */}
-      {!sidebarCollapsed && (
-        <div
-          className={styles.sidebarBackdrop}
-          onClick={() => setSidebarCollapsed(true)}
-        />
+      {isMobile && !sidebarCollapsed && (
+        <div aria-hidden="true" className={styles.sidebarBackdrop} onClick={() => setSidebarCollapsed(true)} />
       )}
       <ChatArea
+        key={activeSession}
+        isMobile={isMobile}
+        chips={SUGGESTION_CHIPS[lang]}
         messages={currentMessages}
         streamingMessage={streamingMsg}
         isProcessing={isProcessing}
@@ -1087,4 +1174,9 @@ export default function DemoPage() {
       <Toast message={toastMsg} visible={toastVisible} onClose={() => setToastVisible(false)} />
     </div>
   );
+}
+
+export default function DemoPage() {
+  const isZh = useIsZh();
+  return <DemoExperience key={isZh ? 'zh' : 'en'} isZh={isZh} />;
 }

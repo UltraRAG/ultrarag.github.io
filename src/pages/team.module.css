@@ -29,7 +29,7 @@
   .groupTitle {
     font-size: 1.5rem;
     font-weight: 600;
-    color: #3b82f6; /* 独立页面可以用蓝色标题区分 */
+    color: #2563eb; /* 独立页面可以用蓝色标题区分 */
     margin-bottom: 3rem;
     position: relative;
     display: inline-block;
@@ -98,7 +98,7 @@
     margin-bottom: 0.2rem;
   }
 
-  .memberRole { font-size: 0.85rem; color: #9ca3af; }
+  .memberRole { font-size: 0.85rem; color: #666; }
 
   /* 顶部两组并排布局 */
   .topGroupsRow {

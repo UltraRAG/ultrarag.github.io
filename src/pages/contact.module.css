@@ -21,7 +21,7 @@
 
 .pageSubtitle {
   font-size: 1.5rem;
-  color: #86868b;
+  color: #666;
   max-width: 600px;
   margin: 0 auto;
   font-weight: 400;
@@ -165,7 +165,7 @@
 }
 
 .faqItem p {
-  color: #86868b;
+  color: #666;
   line-height: 1.6;
 }
 

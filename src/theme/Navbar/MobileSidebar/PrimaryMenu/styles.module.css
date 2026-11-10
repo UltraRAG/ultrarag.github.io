@@ -72,7 +72,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #999;
+  color: #666;
   flex-shrink: 0;
   transition: color 0.15s;
 }
@@ -108,7 +108,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #999;
+  color: #666;
 }
 
 .sectionList {
@@ -175,7 +175,7 @@
   padding: 4px 10px;
   font-size: 13px;
   font-weight: 600;
-  color: #999;
+  color: #666;
   cursor: pointer;
   border-radius: 12px;
   transition: all 0.15s;
@@ -195,3 +195,7 @@
   font-size: 12px;
   user-select: none;
 }
+
+.mobileMenu { min-height: 100%; height: auto; }
+.bottomBar { margin-top: auto; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+.langBtn { min-height: 36px; }

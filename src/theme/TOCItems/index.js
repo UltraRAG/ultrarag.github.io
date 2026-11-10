@@ -18,7 +18,8 @@ function filterTocByDOM(items) {
 
 export default function TOCItems({ toc, ...props }) {
   const { lang } = useLanguage();
-  const [filteredToc, setFilteredToc] = useState(toc);
+  // The other language has no DOM anchors during SSR or before hydration.
+  const [filteredToc, setFilteredToc] = useState([]);
 
   useEffect(() => {
     // 等待 DOM 更新后再过滤

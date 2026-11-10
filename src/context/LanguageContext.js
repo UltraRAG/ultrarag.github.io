@@ -1,3 +1,4 @@
+import Head from '@docusaurus/Head';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const LanguageContext = createContext({
@@ -23,6 +24,7 @@ export function LanguageProvider({ children }) {
   }, []);
 
   const setLang = (newLang) => {
+    if (newLang !== 'en' && newLang !== 'zh') return;
     setLangState(newLang);
     try {
       localStorage.setItem(STORAGE_KEY, newLang);
@@ -34,6 +36,8 @@ export function LanguageProvider({ children }) {
   return (
     <LanguageContext.Provider value={{ lang, setLang }}>
       {children}
+      {/* Render after Layout so its static locale does not override the selection. */}
+      <Head><html lang={lang === 'zh' ? 'zh-CN' : 'en'} /></Head>
     </LanguageContext.Provider>
   );
 }

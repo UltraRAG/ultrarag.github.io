@@ -1,104 +1,92 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, {useEffect, useId, useRef, useState} from 'react';
 import Link from '@docusaurus/Link';
 import clsx from 'clsx';
-import useBaseUrl from '@docusaurus/useBaseUrl';
-import { useLanguage } from '@site/src/context/LanguageContext';
+import {useLanguage} from '@site/src/context/LanguageContext';
 import styles from './MegaMenu.module.css';
 
-// 简单的 SVG 箭头图标
-const ChevronDown = () => (
-  <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ marginLeft: '4px', opacity: 0.5 }}>
-    <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-export default function MegaMenu({ label, labelZh, items, position, to: triggerTo }) {
-  const { lang } = useLanguage();
+export default function MegaMenu({label, labelZh, items, to: triggerTo}) {
+  const {lang} = useLanguage();
   const isZh = lang === 'zh';
   const displayLabel = isZh ? (labelZh || label) : label;
-
-  const localizedItems = items.map(column => ({
-    ...column,
-    title: isZh ? (column.titleZh || column.title) : column.title,
-    items: column.items.map(item => ({
-      ...item,
-      label: isZh ? (item.labelZh || item.label) : item.label,
-    })),
-  }));
-
   const [isOpen, setIsOpen] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   const containerRef = useRef(null);
+  const toggleRef = useRef(null);
   const timeoutRef = useRef(null);
+  const menuId = useId();
 
-  // 处理延迟关闭，提供更好的用户体验
-  const handleMouseEnter = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setIsHovered(true);
+  const open = () => {
+    clearTimeout(timeoutRef.current);
     setIsOpen(true);
   };
-
-  const handleMouseLeave = () => {
-    timeoutRef.current = setTimeout(() => {
-      setIsHovered(false);
-      setIsOpen(false);
-    }, 150); // 150ms 延迟
+  const close = () => {
+    clearTimeout(timeoutRef.current);
+    setIsOpen(false);
   };
 
-  // 点击外部关闭
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setIsOpen(false);
-        setIsHovered(false);
-      }
+    const outside = event => {
+      if (!containerRef.current?.contains(event.target)) setIsOpen(false);
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('pointerdown', outside);
+    return () => {
+      clearTimeout(timeoutRef.current);
+      document.removeEventListener('pointerdown', outside);
+    };
   }, []);
 
   return (
-    <div 
+    <div
       className={clsx('navbar__item', styles.megaMenuContainer)}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
       ref={containerRef}
-    >
-      {triggerTo ? (
-        <Link
-          to={triggerTo}
-          className={clsx('navbar__link', styles.megaMenuTrigger, {
-            [styles.active]: isOpen
-          })}
-        >
+      onMouseLeave={() => {
+        if (!containerRef.current?.contains(document.activeElement)) {
+          timeoutRef.current = setTimeout(close, 150);
+        }
+      }}
+      onBlur={event => {
+        if (!event.currentTarget.contains(event.relatedTarget)) close();
+      }}
+      onKeyDown={event => {
+        if (event.key === 'Escape' && isOpen) {
+          event.preventDefault();
+          close();
+          toggleRef.current?.focus();
+        }
+        if (event.key === 'ArrowDown' && event.target.closest('a, button')?.parentElement === containerRef.current) {
+          event.preventDefault();
+          open();
+          requestAnimationFrame(() => document.getElementById(menuId)?.querySelector('a')?.focus());
+        }
+      }}>
+      {triggerTo && (
+        <Link to={triggerTo} className={clsx('navbar__link', styles.megaMenuTrigger)} onMouseEnter={open} onClick={close}>
           {displayLabel}
         </Link>
-      ) : (
-        <div 
-          className={clsx('navbar__link', styles.megaMenuTrigger, {
-            [styles.active]: isOpen
-          })}
-          role="button"
-          tabIndex={0}
-        >
-          {displayLabel}
-        </div>
       )}
-
-      <div className={clsx(styles.megaMenuDropdown, { [styles.show]: isOpen })}>
+      <button
+        type="button"
+        ref={toggleRef}
+        className={styles.menuToggle}
+        aria-label={`${isOpen ? (isZh ? '收起' : 'Collapse') : (isZh ? '展开' : 'Expand')} ${displayLabel}`}
+        aria-expanded={isOpen}
+        aria-controls={menuId}
+        onClick={() => isOpen ? close() : open()}>
+        {!triggerTo && displayLabel}
+        <svg aria-hidden="true" width="10" height="6" viewBox="0 0 10 6" fill="none">
+          <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </button>
+      <div id={menuId} hidden={!isOpen} className={clsx(styles.megaMenuDropdown, isOpen && styles.show)}>
         <div className={styles.dropdownContent}>
-          {localizedItems.map((column, idx) => (
-            <div key={idx} className={styles.menuColumn}>
-              {column.title && <div className={styles.columnTitle}>{column.title}</div>}
+          {items.map((column, index) => (
+            <div key={index} className={styles.menuColumn}>
+              {column.title && <div className={styles.columnTitle}>{isZh ? (column.titleZh || column.title) : column.title}</div>}
               <ul className={styles.menuList}>
-                {column.items.map((item, itemIdx) => (
-                  <li key={itemIdx} className={styles.menuItem}>
-                    <Link 
-                      to={item.to || item.href} 
-                      className={styles.menuLink}
-                      target={item.target}
-                    >
-                      {item.label}
+                {column.items.map((item, itemIndex) => (
+                  <li key={itemIndex} className={styles.menuItem}>
+                    <Link to={item.to || item.href} className={styles.menuLink} target={item.target}
+                      rel={item.target === '_blank' ? 'noopener noreferrer' : undefined} onClick={close}>
+                      {isZh ? (item.labelZh || item.label) : item.label}
                     </Link>
                   </li>
                 ))}

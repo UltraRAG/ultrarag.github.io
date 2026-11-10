@@ -28,29 +28,43 @@ export default function GithubStar({ href, repo }) {
   const [stars, setStars] = useState(null);
 
   useEffect(() => {
-    // 简单的本地缓存，避免频繁请求 API (GitHub API Rate Limit)
-    const cachedStars = sessionStorage.getItem(`github-stars-${repo}`);
-    if (cachedStars) {
-      setStars(JSON.parse(cachedStars));
-      return;
+    setStars(null);
+    const cacheKey = `github-stars-${repo}`;
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(cacheKey));
+      if (Number.isSafeInteger(cached) && cached >= 0) {
+        setStars(cached);
+        return;
+      }
+    } catch {
+      // Storage may be blocked or contain an old/corrupt cache entry.
     }
-
+    if (!repo) return;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
     async function fetchStars() {
       try {
-        const response = await fetch(`https://api.github.com/repos/${repo}`);
-        if (response.ok) {
-          const data = await response.json();
-          setStars(data.stargazers_count);
-          sessionStorage.setItem(`github-stars-${repo}`, JSON.stringify(data.stargazers_count));
+        const response = await fetch(`https://api.github.com/repos/${repo}`, {signal: controller.signal});
+        if (!response.ok) return;
+        const data = await response.json();
+        if (controller.signal.aborted || !Number.isSafeInteger(data.stargazers_count) || data.stargazers_count < 0) return;
+        setStars(data.stargazers_count);
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify(data.stargazers_count));
+        } catch {
+          // The link remains usable when caching is unavailable.
         }
-      } catch (error) {
-        console.error('Failed to fetch GitHub stars:', error);
+      } catch {
+        // This optional counter must not prevent navigation when offline.
+      } finally {
+        clearTimeout(timeout);
       }
     }
-
-    if (repo) {
-      fetchStars();
-    }
+    fetchStars();
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, [repo]);
 
   return (
@@ -60,7 +74,7 @@ export default function GithubStar({ href, repo }) {
         className={styles.githubButton}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label={`Star ${repo} on GitHub`}
+        aria-label={`GitHub ${formatStarCount(stars)} stars for ${repo}`}
       >
         <div className={styles.iconWrapper}>
           <GithubLogo />
