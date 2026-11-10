@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
 import { useIsZh } from '../../i18n';
 import styles from './styles.module.css';
 import clsx from 'clsx';
+import {externalUrl} from '../../utils/externalUrl.mjs';
 
 // 目标 URL (使用 jsDelivr CDN 以获得更好的性能和 CORS 支持)
 const PAPER_SOURCE_URL = 'https://cdn.jsdelivr.net/gh/OpenBMB/UltraRAG@rag-paper-daily/rag-paper-daily/README.md';
@@ -70,28 +71,56 @@ export default function DailyPapers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeDate, setActiveDate] = useState(null);
+  const [attempt, setAttempt] = useState(0);
+  const [visibleDates, setVisibleDates] = useState(7);
+  const pendingScroll = useRef(null);
 
   useEffect(() => {
+    if (!pendingScroll.current) return;
+    const element = document.getElementById(`date-${pendingScroll.current}`);
+    if (element) {
+      element.scrollIntoView({behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'});
+      pendingScroll.current = null;
+    }
+  }, [activeDate, visibleDates, loading]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    setLoading(true);
+    setError(null);
     async function fetchPapers() {
       try {
-        const response = await fetch(PAPER_SOURCE_URL);
+        const response = await fetch(PAPER_SOURCE_URL, {signal: controller.signal});
         if (!response.ok) throw new Error('Failed to fetch papers');
         const text = await response.text();
         const parsedData = parseMarkdown(text);
+        if (controller.signal.aborted) return;
+        if (!parsedData.length) throw new Error('No papers available');
         setPapersByDate(parsedData);
         if (parsedData.length > 0) {
-          setActiveDate(parsedData[0].date);
+          const requested = window.location.hash.slice(1);
+          const index = parsedData.findIndex(group => `date-${group.date}` === requested);
+          setVisibleDates(Math.max(7, index + 1));
+          setActiveDate(parsedData[Math.max(0, index)].date);
+          if (index >= 0) pendingScroll.current = parsedData[index].date;
         }
       } catch (err) {
-        console.error(err);
-        setError(err.message);
+        if (!disposed) setError(true);
       } finally {
-        setLoading(false);
+        clearTimeout(timeout);
+        if (!disposed) setLoading(false);
       }
     }
 
+    let disposed = false;
     fetchPapers();
-  }, []);
+    return () => {
+      disposed = true;
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [attempt]);
 
   // 简单的 Markdown/HTML 解析器
   const parseMarkdown = (markdown) => {
@@ -126,14 +155,15 @@ export default function DailyPapers() {
               const abstractDetails = cols[1].querySelector('details');
               const summaryDetails = cols[2].querySelector('details');
 
-              if (titleLink) {
+              const link = externalUrl(titleLink?.getAttribute('href'));
+              if (titleLink && link) {
                 // 处理 abstract 和 summary，移除 '展开' 文本
                 let abstract = abstractDetails ? abstractDetails.textContent.replace('展开', '').trim() : cols[1].textContent.trim();
                 let summary = summaryDetails ? summaryDetails.textContent.replace('展开', '').trim() : cols[2].textContent.trim();
 
                 papers.push({
                   title: titleLink.textContent.trim(),
-                  link: titleLink.getAttribute('href'),
+                  link,
                   abstract: abstract,
                   summary: summary
                 });
@@ -151,17 +181,16 @@ export default function DailyPapers() {
   };
 
   const scrollToDate = (date) => {
+    pendingScroll.current = date;
     setActiveDate(date);
-    const element = document.getElementById(`date-${date}`);
-    if (element) {
-      // 考虑 sticky header 的偏移
-      const headerOffset = 80;
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-      
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
+    const index = papersByDate.findIndex(group => group.date === date);
+    setVisibleDates(current => Math.max(current, index + 1));
+    // An already active date does not trigger a state update.
+    const existing = document.getElementById(`date-${date}`);
+    if (existing) {
+      pendingScroll.current = null;
+      existing.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
       });
     }
   };
@@ -174,17 +203,20 @@ export default function DailyPapers() {
       <div className={styles.container}>
         {/* Loading State */}
         {loading && (
-          <div className={styles.loadingContainer}>
+          <div className={styles.loadingContainer} role="status">
+            <h1>{isZh ? 'RAG 每日论文' : 'RAG Daily Papers'}</h1>
             <div className={styles.spinner}></div>
-            <p>{isZh ? '正在从 arXiv 获取最新论文...' : 'Fetching latest papers from arXiv...'}</p>
+            <p>{isZh ? '正在加载精选论文...' : 'Loading the curated paper feed...'}</p>
           </div>
         )}
 
         {/* Error State */}
         {error && (
           <div className={styles.loadingContainer}>
-            <p>⚠️ {isZh ? '无法加载论文：' : 'Unable to load papers: '}{error}</p>
-            <p>{isZh ? '请检查您的网络连接。' : 'Please check your network connection.'}</p>
+            <h1>{isZh ? 'RAG 每日论文' : 'RAG Daily Papers'}</h1>
+            <p role="alert">{isZh ? '暂时无法加载论文，请稍后重试。' : 'The paper feed is currently unavailable. Please try again.'}</p>
+            <button type="button" onClick={() => setAttempt(value => value + 1)}>{isZh ? '重试' : 'Retry'}</button>
+            <Link to="https://github.com/OpenBMB/UltraRAG/tree/rag-paper-daily/rag-paper-daily">{isZh ? '查看论文源列表' : 'View the source paper list'}</Link>
           </div>
         )}
 
@@ -226,7 +258,7 @@ export default function DailyPapers() {
                 </p>
               </header>
 
-              {papersByDate.map((group) => (
+              {papersByDate.slice(0, visibleDates).map((group) => (
                 <section 
                   key={group.date} 
                   id={`date-${group.date}`} 
@@ -242,6 +274,12 @@ export default function DailyPapers() {
                   </div>
                 </section>
               ))}
+              {visibleDates < papersByDate.length && (
+                <button type="button" className={styles.loadMore}
+                  onClick={() => setVisibleDates(count => count + 7)}>
+                  {isZh ? '加载更早的论文' : 'Load earlier papers'}
+                </button>
+              )}
             </div>
           </>
         )}

@@ -293,3 +293,15 @@
     grid-template-columns: 1fr;
   }
 }
+
+.loadMore {
+  display: block;
+  min-height: 44px;
+  margin: 24px auto;
+  padding: 10px 24px;
+  background: #fff;
+  color: #1f2937;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+}
