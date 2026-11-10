@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-10",
+  "baselineRef": "4a11df3e4a416fba6bf710601265a91d5ff3a3c7",
+  "countMeaning": "npm audit affected dependency entries, including graph propagation; not distinct CVEs",
+  "baseline": {
+    "info": 0,
+    "low": 4,
+    "moderate": 15,
+    "high": 21,
+    "critical": 18,
+    "total": 58
+  },
+  "optimized": {
+    "info": 0,
+    "low": 5,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 5
+  },
+  "newAffectedPackages": [],
+  "remainingPackages": [
+    "@docusaurus/plugin-svgr",
+    "@docusaurus/preset-classic",
+    "@svgr/plugin-svgo",
+    "@svgr/webpack",
+    "deepmerge"
+  ],
+  "remainingAdvisory": "https://github.com/advisories/GHSA-gcqx-w48m-w2h4",
+  "overrides": {
+    "@docusaurus/core": {
+      "tinypool": "2.2.0"
+    },
+    "serialize-javascript": "7.1.4",
+    "sockjs": {
+      "uuid": "11.1.1"
+    }
+  }
+}

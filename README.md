@@ -28,3 +28,5 @@ npm run images:optimize
 ```
 
 See [the website audit](docs/audit/2026-11-10.md) for findings, validation, and measurement conditions. Pushes to `main` deploy the website; PR branches run quality checks without deployment.
+
+The lockfile also carries targeted overrides for Docusaurus's worker pool, JavaScript serialization, and SockJS UUID generation. These select patched dependencies while keeping the framework version fixed. CI exercises static generation with two workers, and the SockJS UUID API was smoke-tested. Keep the compatibility checks when changing these constraints; dependency audit details are recorded in the audit notes.
